@@ -89,9 +89,6 @@ function App() {
     
     if (photoId) {
       // If there's a photoId parameter, load the image from the photos directory
-      const pieceCount = pieces ? parseInt(pieces, 10) : 16;
-      const showPreview = preview === 'false' ? false : true;
-      
       loadImageFromPhotosDirectory(photoId);
       setIsSharedPuzzle(true);
     } else if (imageData) {
@@ -661,8 +658,16 @@ function App() {
         img.onerror = () => reject(new Error(`Failed to load image: ${imageUrl}`));
       });
       
+      // Get the URL parameters to determine piece count and preview setting
+      const searchParams = new URLSearchParams(window.location.search);
+      const piecesParam = searchParams.get('pieces');
+      const previewParam = searchParams.get('preview');
+      
+      // Use parameters from URL or set defaults
+      const pieceCount = piecesParam ? parseInt(piecesParam, 10) : 16;
+      const showPreviewValue = previewParam === 'false' ? false : true;
+      
       // Process the image as a puzzle
-      const pieceCount = 16; // Default to 16 pieces (4x4)
       const { pieces, rows, cols } = splitImage(img, pieceCount);
       
       // Generate a unique ID for this puzzle
@@ -670,11 +675,11 @@ function App() {
       
       // Update state
       setPieces(pieces);
-      setOriginalImage(img.src);
+      setOriginalImage(showPreviewValue ? img.src : null);
       setGridCols(cols);
       setActualPieceCount(pieces.length);
       setPuzzleId(newPuzzleId);
-      setShowPreview(true);
+      setShowPreview(showPreviewValue);
       setIsComplete(false);
       setShowInstructions(true);
       setSelectedPieceIndex(null);
@@ -682,6 +687,9 @@ function App() {
       
       // Set the piece count to match
       setPieceCount(pieceCount);
+      
+      // Generate a share link for this photo puzzle
+      generatePhotoLink(imageId, pieceCount, showPreviewValue);
       
       // Store the puzzle in localStorage for future reference
       const puzzleData = {
@@ -691,7 +699,7 @@ function App() {
         rows,
         cols,
         pieceCount: pieces.length,
-        showPreview: true
+        showPreview: showPreviewValue
       };
       storePuzzle(puzzleData);
       

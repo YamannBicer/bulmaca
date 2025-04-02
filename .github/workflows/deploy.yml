@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main] # Adjust the branch if necessary
+    branches: [main]
 
 permissions:
   contents: write
@@ -31,27 +31,37 @@ jobs:
           cd frontend
           npm run build
 
-      - name: Prepare deployment directory
+      - name: Create simple index.html
         run: |
-          # Create .nojekyll file
+          cat > frontend/dist/index.html << 'EOL'
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Bulmaca Puzzle Game</title>
+              <link rel="stylesheet" href="./assets/index-Du5ev90J.css">
+            </head>
+            <body>
+              <div id="root"></div>
+              <script type="module" src="./assets/index-y1HWkp6N.js"></script>
+            </body>
+          </html>
+          EOL
+          
+          # Ensure .nojekyll file exists
           touch frontend/dist/.nojekyll
-          
-          # Create deployment directory
-          mkdir -p deploy
-          
-          # Copy all built files to the root (not in a subdirectory)
-          cp -r frontend/dist/* deploy/
-          
-          # Copy the photos directory to the deployment
-          mkdir -p deploy/photos
-          cp -r photos/* deploy/photos/ || true # The || true ensures the command succeeds even if the directory is empty
-          
-          # Create .nojekyll in the deploy root
-          touch deploy/.nojekyll
+
+      - name: Copy photos directory
+        run: |
+          if [ -d "photos" ]; then
+            mkdir -p frontend/dist/photos
+            cp -r photos/* frontend/dist/photos/ || true
+          fi
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: deploy
+          folder: frontend/dist
           branch: gh-pages
           clean: true 

@@ -30,22 +30,19 @@ jobs:
         run: |
           cd frontend
           npm run build
-          
-          # Create a .nojekyll file to disable Jekyll processing
-          touch dist/.nojekyll
 
-      - name: Prepare deployment folder
+      - name: Prepare deployment directory
         run: |
-          # Create a deployment folder
+          # Create .nojekyll file
+          touch frontend/dist/.nojekyll
+          
+          # Make a landing directory
           mkdir -p deploy
           
-          # Copy the built frontend
-          cp -r frontend/dist deploy/
+          # Copy all built files directly to deploy root
+          cp -r frontend/dist/* deploy/
           
-          # Copy the root index.html file
-          cp index.html deploy/
-          
-          # Create a .nojekyll file
+          # Create .nojekyll in the deploy root
           touch deploy/.nojekyll
 
       - name: Deploy to GitHub Pages

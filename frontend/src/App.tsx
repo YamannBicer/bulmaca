@@ -80,37 +80,70 @@ function App() {
 
   // Parse URL parameters on page load
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const id = searchParams.get('id');
-    const pieces = searchParams.get('pieces');
-    const preview = searchParams.get('preview');
-    const imageData = searchParams.get('imageData');
-    const photoId = searchParams.get('photoId');
-    
-    if (photoId) {
-      // If there's a photoId parameter, load the image from the photos directory
-      loadImageFromPhotosDirectory(photoId);
-      setIsSharedPuzzle(true);
-    } else if (imageData) {
-      // If the URL contains image data, use it to create a puzzle
-      const pieceCount = pieces ? parseInt(pieces, 10) : 9;
-      const showPreview = preview === 'false' ? false : true;
-      
-      loadPuzzleFromImageData(imageData, pieceCount, showPreview);
-      setIsSharedPuzzle(true);
-    } else if (id) {
-      // Otherwise try to load from localStorage by ID
-      const pieceCount = pieces ? parseInt(pieces, 10) : undefined;
-      const showPreview = preview === 'false' ? false : true;
-      
-      loadPuzzleFromId(id, pieceCount, showPreview);
-      setIsSharedPuzzle(true);
-    } else {
-      // If no parameters provided, load the default sample image
-      loadImageFromPhotosDirectory('sample1');
-      setIsSharedPuzzle(false); // Not a shared puzzle so user can change settings
-    }
+    // Always load the sample1.jpg image by default
+    loadSampleImage();
   }, []);
+
+  // Load the sample image
+  const loadSampleImage = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // This is the default sample image path
+      const imageId = 'sample1';
+      
+      // Construct the URL to the image in the photos directory
+      const imageUrl = `${window.location.origin}${import.meta.env.BASE_URL}photos/${imageId}.jpg`;
+      
+      console.log(`Attempting to load sample image from: ${imageUrl}`);
+      
+      // Create an image element to load the image
+      const img = new Image();
+      img.src = imageUrl;
+      
+      // Wait for the image to load
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          console.log('Sample image loaded successfully');
+          resolve();
+        };
+        img.onerror = (e) => {
+          console.error(`Failed to load sample image: ${imageUrl}`, e);
+          reject(new Error(`Failed to load sample image: ${imageUrl}`));
+        };
+      });
+      
+      // Default to 16 pieces (4x4 grid)
+      const pieceCount = 16;
+      
+      // Process the image as a puzzle
+      const { pieces, rows, cols } = splitImage(img, pieceCount);
+      
+      // Generate a unique ID for this puzzle
+      const newPuzzleId = generateUUID();
+      
+      // Update state
+      setPieces(pieces);
+      setOriginalImage(img.src);
+      setGridCols(cols);
+      setActualPieceCount(pieces.length);
+      setPuzzleId(newPuzzleId);
+      setShowPreview(true);
+      setIsComplete(false);
+      setShowInstructions(true);
+      setSelectedPieceIndex(null);
+      setMoveHistory([]);
+      setPieceCount(pieceCount);
+      setIsSharedPuzzle(false); // Allow settings to be changed
+      
+    } catch (error) {
+      console.error('Error loading sample image:', error);
+      setError('Failed to load the sample image. Please try uploading your own image.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Store puzzles in local storage
   const storePuzzle = (puzzleData: PuzzleData) => {

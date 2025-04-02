@@ -76,6 +76,7 @@ function App() {
   const [shareLink, setShareLink] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isSharedPuzzle, setIsSharedPuzzle] = useState(false)
 
   // Parse URL parameters on page load
   useEffect(() => {
@@ -83,12 +84,22 @@ function App() {
     const id = searchParams.get('id');
     const pieces = searchParams.get('pieces');
     const preview = searchParams.get('preview');
+    const imageData = searchParams.get('imageData');
     
-    if (id) {
+    if (imageData) {
+      // If the URL contains image data, use it to create a puzzle
+      const pieceCount = pieces ? parseInt(pieces, 10) : 9;
+      const showPreview = preview === 'false' ? false : true;
+      
+      loadPuzzleFromImageData(imageData, pieceCount, showPreview);
+      setIsSharedPuzzle(true); // Mark as a shared puzzle
+    } else if (id) {
+      // Otherwise try to load from localStorage by ID
       const pieceCount = pieces ? parseInt(pieces, 10) : undefined;
       const showPreview = preview === 'false' ? false : true;
       
       loadPuzzleFromId(id, pieceCount, showPreview);
+      setIsSharedPuzzle(true); // Mark as a shared puzzle
     }
   }, []);
 
@@ -134,8 +145,8 @@ function App() {
       
       // Use stored pieces or regenerate if piece count is different
       let pieces = puzzleData.pieces;
-      let rows = puzzleData.rows;
       let cols = puzzleData.cols;
+      let actualPieces = puzzleData.pieceCount;
       
       if (pieceCount && pieceCount !== puzzleData.pieceCount) {
         // Load the original image for resplitting
@@ -148,8 +159,8 @@ function App() {
         
         const result = splitImage(img, pieceCount);
         pieces = result.pieces;
-        rows = result.rows;
         cols = result.cols;
+        actualPieces = pieceCount;
       }
       
       // Set state with the loaded data
@@ -164,11 +175,77 @@ function App() {
       setSelectedPieceIndex(null);
       setMoveHistory([]);
       
+      // Set the piece count dropdown to match the actual piece count
+      setPieceCount(actualPieces);
+      
       // Generate share link
       generateShareLink(id, pieces.length, showPreview);
     } catch (error) {
       console.error('Error loading puzzle:', error);
-      setError('Failed to load the puzzle. The link might be invalid or the puzzle has been removed.');
+      setError('Failed to load the puzzle. The link might be invalid or the puzzle has been removed. You can upload your own image to create a new puzzle.');
+      // Reset shared puzzle state so user can create their own
+      setIsSharedPuzzle(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load a puzzle from image data URL
+  const loadPuzzleFromImageData = async (imageDataUrl: string, pieceCount: number, showPreview: boolean) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Create an image from the data URL
+      const img = new Image();
+      img.src = imageDataUrl;
+      
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image from URL'));
+      });
+      
+      // Split the image into pieces
+      const { pieces, rows, cols } = splitImage(img, pieceCount);
+      
+      // Generate a unique ID for this puzzle
+      const newPuzzleId = generateUUID();
+      
+      // Update state
+      setPieces(pieces);
+      setOriginalImage(showPreview ? imageDataUrl : null);
+      setGridCols(cols);
+      setActualPieceCount(pieces.length);
+      setPuzzleId(newPuzzleId);
+      setShowPreview(showPreview);
+      setIsComplete(false);
+      setShowInstructions(true);
+      setSelectedPieceIndex(null);
+      setMoveHistory([]);
+      
+      // Set the piece count to match what was in the URL
+      setPieceCount(pieceCount);
+      
+      // Generate a regular share link
+      generateShareLink(newPuzzleId, pieces.length, showPreview);
+      
+      // Store the puzzle in localStorage for future reference
+      const puzzleData = {
+        puzzle_id: newPuzzleId,
+        pieces,
+        originalImage: imageDataUrl,
+        rows,
+        cols,
+        pieceCount: pieces.length,
+        showPreview
+      };
+      storePuzzle(puzzleData);
+      
+    } catch (error) {
+      console.error('Error loading image from URL:', error);
+      setError('Failed to load the shared puzzle. The link may be invalid or too long. You can upload your own image to create a new puzzle.');
+      // Reset shared puzzle state so user can create their own
+      setIsSharedPuzzle(false);
     } finally {
       setLoading(false);
     }
@@ -247,6 +324,7 @@ function App() {
     const url = new URL(window.location.href);
     url.search = ''; // Clear existing query params
     
+    // Option 1: Simple ID-based link (default)
     url.searchParams.set('id', id);
     url.searchParams.set('pieces', pieces.toString());
     if (!preview) {
@@ -254,6 +332,55 @@ function App() {
     }
     
     setShareLink(url.toString());
+  };
+  
+  // Generate a shareable link that includes the image data
+  const generateDataShareLink = () => {
+    if (!originalImage) return;
+    
+    // Create a compressed version of the image
+    const img = new Image();
+    img.src = originalImage;
+    
+    // Once the image loads, create a smaller version for the URL
+    img.onload = () => {
+      // Create a small thumbnail version to reduce URL size
+      const canvas = document.createElement('canvas');
+      const maxDimension = 300; // Small enough for URL, but recognizable
+      
+      // Calculate dimensions while maintaining aspect ratio
+      let width = img.width;
+      let height = img.height;
+      if (width > height) {
+        height = Math.floor(height * (maxDimension / width));
+        width = maxDimension;
+      } else {
+        width = Math.floor(width * (maxDimension / height));
+        height = maxDimension;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Draw resized image
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Get data URL with medium compression
+      const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+      
+      // Create URL with image data
+      const url = new URL(window.location.href);
+      url.search = '';
+      url.searchParams.set('pieces', actualPieceCount.toString());
+      if (!showPreview) {
+        url.searchParams.set('preview', 'false');
+      }
+      url.searchParams.set('imageData', thumbnailDataUrl);
+      
+      // Set the share link
+      setShareLink(url.toString());
+    };
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -460,9 +587,12 @@ function App() {
   }
   
   const togglePreview = () => {
-    setShowPreview(prev => !prev);
-    if (puzzleId) {
-      generateShareLink(puzzleId, actualPieceCount, !showPreview);
+    // Only allow toggling preview if not a shared puzzle
+    if (!isSharedPuzzle) {
+      setShowPreview(prev => !prev);
+      if (puzzleId) {
+        generateShareLink(puzzleId, actualPieceCount, !showPreview);
+      }
     }
   }
 
@@ -505,6 +635,7 @@ function App() {
                 value={pieceCount} 
                 onChange={(e) => setPieceCount(Number(e.target.value))}
                 className="piece-count-select"
+                disabled={isSharedPuzzle} // Disable if this is a shared puzzle
               >
                 {PIECE_COUNT_OPTIONS.map(count => (
                   <option key={count} value={count}>{count} pieces</option>
@@ -516,6 +647,7 @@ function App() {
               accept="image/*"
               onChange={handleFileUpload}
               className="file-input"
+              disabled={isSharedPuzzle && error === null} // Allow uploading only if there's an error with the shared puzzle
             />
             {actualPieceCount > 0 && (
               <div className="piece-count-info">
@@ -523,7 +655,7 @@ function App() {
               </div>
             )}
             
-            {puzzleId && (
+            {puzzleId && !isSharedPuzzle && (
               <div className="share-section">
                 <div className="share-options">
                   <label className="preview-toggle">
@@ -531,6 +663,7 @@ function App() {
                       type="checkbox" 
                       checked={showPreview}
                       onChange={togglePreview}
+                      disabled={isSharedPuzzle} // Disable if shared puzzle
                     />
                     Show preview image
                   </label>
@@ -539,10 +672,25 @@ function App() {
                   <button onClick={copyShareLink} className="copy-link-button">
                     Copy Shareable Link
                   </button>
+                  <button onClick={() => {
+                    generateDataShareLink();
+                    setTimeout(() => copyShareLink(), 500);
+                  }} className="copy-link-button image-link">
+                    Create &amp; Copy Link With Image
+                  </button>
                   <div className="link-info">
-                    Share this puzzle with friends!
+                    Share this puzzle with friends! Use the image link to share without requiring the recipient to have the image.
                   </div>
                 </div>
+              </div>
+            )}
+            
+            {isSharedPuzzle && (
+              <div className="shared-puzzle-info">
+                <p>You're solving a shared puzzle. The settings cannot be changed.</p>
+                {!showPreview && (
+                  <p className="challenge-mode">Challenge mode: Preview image is hidden!</p>
+                )}
               </div>
             )}
           </div>

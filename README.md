@@ -8,7 +8,9 @@ A client-side web application where you can upload photos and solve them as puzz
 - Choose the number of puzzle pieces (4, 9, 16, 25, 36, 49, 64, 81, or 100)
 - Click-to-swap puzzle pieces
 - Option to hide/show the preview image for added challenge
-- Create shareable links to challenge friends with the same puzzle
+- **Two types of shareable links**:
+  - Standard links (smaller, but recipient needs to upload the same image)
+  - Image-included links (larger, but includes the image data)
 - Automatic image resizing and processing
 - Undo functionality with keyboard shortcut (Ctrl+Z)
 - Shuffle button to randomize pieces
@@ -89,15 +91,42 @@ This repository is set up to automatically deploy to GitHub Pages when changes a
 
 ## How Puzzles Are Shared
 
-When you create a puzzle:
-1. The image is processed completely in your browser using HTML5 Canvas
+When you create a puzzle, you have two sharing options:
+
+### Standard Link
+1. The image is processed in your browser using HTML5 Canvas
 2. Puzzle data is stored in your browser's localStorage
 3. A unique ID is generated for your puzzle
 4. A shareable link is created with this ID
+5. Recipients need to have the puzzle in their localStorage, or upload the same image
 
-When someone opens a shared link:
-- If they have the puzzle stored in their localStorage, it loads immediately
-- If not, they'll need to upload the image themselves
+### Image-Included Link
+1. A compressed version of the image is created
+2. The image data is included directly in the URL as a base64 string
+3. Recipients can open the puzzle immediately without needing the original image
+4. These links are larger but more convenient for sharing
+
+## Shareable Links
+
+### Standard Links
+```
+https://yourusername.github.io/bulmaca/?id=12345&pieces=16&preview=false
+```
+
+- `id`: The unique identifier for the puzzle
+- `pieces`: The number of pieces (optional)
+- `preview`: Whether to show the preview image (optional, defaults to true)
+
+### Image-Included Links
+```
+https://yourusername.github.io/bulmaca/?pieces=16&preview=false&imageData=data:image/jpeg;base64,...
+```
+
+- `imageData`: The compressed image data as a base64 string
+- `pieces`: The number of pieces
+- `preview`: Whether to show the preview image (optional, defaults to true)
+
+These image-included links are longer but provide a better experience for recipients as they don't need to have the original image.
 
 ## Technologies Used
 

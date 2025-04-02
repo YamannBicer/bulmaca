@@ -30,9 +30,13 @@ jobs:
         run: |
           cd frontend
           npm run build
+          
+          # Create a .nojekyll file to disable Jekyll processing
+          touch dist/.nojekyll
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: frontend/dist
-          branch: gh-pages 
+          branch: gh-pages
+          clean: true 

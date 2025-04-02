@@ -34,9 +34,23 @@ jobs:
           # Create a .nojekyll file to disable Jekyll processing
           touch dist/.nojekyll
 
+      - name: Prepare deployment folder
+        run: |
+          # Create a deployment folder
+          mkdir -p deploy
+          
+          # Copy the built frontend
+          cp -r frontend/dist deploy/
+          
+          # Copy the root index.html file
+          cp index.html deploy/
+          
+          # Create a .nojekyll file
+          touch deploy/.nojekyll
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: frontend/dist
+          folder: deploy
           branch: gh-pages
           clean: true 

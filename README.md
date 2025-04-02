@@ -99,7 +99,7 @@ When someone opens a shared link:
 - If they have the puzzle stored in their localStorage, it loads immediately
 - If not, they'll need to upload the image themselves
 
-## Shareable Links
+## Technologies Used
 
 Shareable links contain the puzzle ID, piece count, and preview settings:
 ```

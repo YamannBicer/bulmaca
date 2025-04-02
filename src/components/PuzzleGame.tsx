@@ -15,8 +15,13 @@ const PuzzleGame: React.FC = () => {
   const [isComplete, setIsComplete] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageUrl = '/bulmaca/vite.svg';
+  
+  // Try to load the sample image or fallback to Vite logo
+  const primaryImageUrl = '/bulmaca/photos/sample1.jpg';
+  const fallbackImageUrl = '/bulmaca/vite.svg';
+  const [imageUrl, setImageUrl] = useState(primaryImageUrl);
   const gridSize = 5; // 5x5 grid = 25 pieces
   
   // Load and process the image
@@ -76,9 +81,22 @@ const PuzzleGame: React.FC = () => {
         shufflePieces(shuffledPieces);
         setPieces(shuffledPieces);
         setImageLoaded(true);
+        setImageError(false);
       }
     };
-  }, []);
+    
+    img.onerror = () => {
+      // If primary image fails, try fallback
+      if (imageUrl === primaryImageUrl) {
+        console.log('Primary image failed to load, trying fallback');
+        setImageUrl(fallbackImageUrl);
+      } else {
+        // If fallback also fails
+        setImageError(true);
+        setImageLoaded(false);
+      }
+    };
+  }, [imageUrl]);
   
   // Check if the puzzle is complete
   useEffect(() => {
@@ -143,6 +161,15 @@ const PuzzleGame: React.FC = () => {
   
   if (!imageLoaded) {
     return <div className="loading">Loading puzzle...</div>;
+  }
+  
+  if (imageError) {
+    return (
+      <div className="error-container">
+        <h2>Error Loading Image</h2>
+        <p>Unable to load the puzzle image. Please try again later.</p>
+      </div>
+    );
   }
   
   return (

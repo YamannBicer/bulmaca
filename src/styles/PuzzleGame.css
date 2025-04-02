@@ -118,4 +118,24 @@
   .puzzle-container, .preview-container {
     width: 100%;
   }
+}
+
+.error-container {
+  text-align: center;
+  padding: 40px;
+  background-color: #ffebee;
+  border-radius: 8px;
+  margin: 100px auto;
+  max-width: 500px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.error-container h2 {
+  color: #d32f2f;
+  margin-bottom: 10px;
+}
+
+.error-container p {
+  font-size: 16px;
+  color: #424242;
 } 

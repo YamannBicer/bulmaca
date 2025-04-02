@@ -8,9 +8,10 @@ A client-side web application where you can upload photos and solve them as puzz
 - Choose the number of puzzle pieces (4, 9, 16, 25, 36, 49, 64, 81, or 100)
 - Click-to-swap puzzle pieces
 - Option to hide/show the preview image for added challenge
-- **Two types of shareable links**:
+- **Three types of shareable links**:
   - Standard links (smaller, but recipient needs to upload the same image)
   - Image-included links (larger, but includes the image data)
+  - Repository image links (use images stored in the repository)
 - Automatic image resizing and processing
 - Undo functionality with keyboard shortcut (Ctrl+Z)
 - Shuffle button to randomize pieces
@@ -91,20 +92,42 @@ This repository is set up to automatically deploy to GitHub Pages when changes a
 
 ## How Puzzles Are Shared
 
-When you create a puzzle, you have two sharing options:
+When you create a puzzle, you have three sharing options:
 
-### Standard Link
-1. The image is processed in your browser using HTML5 Canvas
-2. Puzzle data is stored in your browser's localStorage
-3. A unique ID is generated for your puzzle
-4. A shareable link is created with this ID
-5. Recipients need to have the puzzle in their localStorage, or upload the same image
+### 1. Standard Link
+- The image is processed in your browser using HTML5 Canvas
+- Puzzle data is stored in your browser's localStorage
+- A unique ID is generated for your puzzle
+- A shareable link is created with this ID
+- Recipients need to have the puzzle in their localStorage, or upload the same image
 
-### Image-Included Link
-1. A compressed version of the image is created
-2. The image data is included directly in the URL as a base64 string
-3. Recipients can open the puzzle immediately without needing the original image
-4. These links are larger but more convenient for sharing
+### 2. Image-Included Link
+- A compressed version of the image is created
+- The image data is included directly in the URL as a base64 string
+- Recipients can open the puzzle immediately without needing the original image
+- These links are larger but more convenient for sharing
+
+### 3. Repository Image Links
+- Uses images that are stored in the repository's `photos` directory
+- Recipients don't need to upload or have the image
+- Ideal for creating permanent puzzles with consistent images
+- Much smaller links than image-included links
+
+## Using the Photos Directory
+
+The project includes a `photos` directory where you can store images to be used in puzzles:
+
+1. Add an image to the `photos` directory with a unique ID as its filename (e.g., `sample1.jpg`)
+2. Create a link with the `photoId` parameter: 
+   ```
+   https://yourusername.github.io/bulmaca/?photoId=sample1&pieces=16&preview=true
+   ```
+3. Anyone who opens this link will load the image from the repository and see the puzzle
+
+To add images to the repository:
+1. Place them in the `photos` directory
+2. Commit and push the changes
+3. After the GitHub Actions workflow completes, the images will be available
 
 ## Shareable Links
 
@@ -113,20 +136,22 @@ When you create a puzzle, you have two sharing options:
 https://yourusername.github.io/bulmaca/?id=12345&pieces=16&preview=false
 ```
 
-- `id`: The unique identifier for the puzzle
-- `pieces`: The number of pieces (optional)
-- `preview`: Whether to show the preview image (optional, defaults to true)
-
 ### Image-Included Links
 ```
 https://yourusername.github.io/bulmaca/?pieces=16&preview=false&imageData=data:image/jpeg;base64,...
 ```
 
-- `imageData`: The compressed image data as a base64 string
-- `pieces`: The number of pieces
-- `preview`: Whether to show the preview image (optional, defaults to true)
+### Repository Image Links
+```
+https://yourusername.github.io/bulmaca/?photoId=sample1&pieces=16&preview=false
+```
 
-These image-included links are longer but provide a better experience for recipients as they don't need to have the original image.
+Parameters:
+- `id`: The unique identifier for the puzzle (for standard links)
+- `imageData`: The compressed image data as a base64 string (for image-included links)
+- `photoId`: The ID of an image in the photos directory (for repository image links)
+- `pieces`: The number of puzzle pieces (optional)
+- `preview`: Whether to show the preview image (optional, defaults to true)
 
 ## Technologies Used
 

@@ -18,19 +18,58 @@ const PuzzleGame: React.FC = () => {
   const [imageError, setImageError] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // Try to load the sample image or fallback to Vite logo
-  const primaryImageUrl = '/bulmaca/photos/sample1.jpg';
-  const fallbackImageUrl = '/bulmaca/vite.svg';
+  // Dynamically detect base path
+  const basePath = import.meta.env.BASE_URL || '';
+  
+  // Simple colored grid for development
+  const createColorGrid = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 500;
+    canvas.height = 500;
+    const ctx = canvas.getContext('2d');
+    
+    if (ctx) {
+      // Draw a colored grid
+      const colors = ['#ff6b6b', '#4ecdc4', '#45b7d8', '#f9c80e', '#66bb6a'];
+      const cellSize = 100;
+      
+      for (let y = 0; y < 5; y++) {
+        for (let x = 0; x < 5; x++) {
+          const colorIndex = (x + y) % colors.length;
+          ctx.fillStyle = colors[colorIndex];
+          ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+          
+          // Add cell number
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 24px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`${y * 5 + x + 1}`, x * cellSize + cellSize/2, y * cellSize + cellSize/2);
+        }
+      }
+      
+      return canvas.toDataURL('image/png');
+    }
+    
+    return '';
+  };
+  
+  // Create a default image in development
+  const defaultImage = createColorGrid();
+  const primaryImageUrl = import.meta.env.DEV ? defaultImage : `${basePath}/vite.svg`;
+  const fallbackImageUrl = `${basePath}/vite.svg`;
   const [imageUrl, setImageUrl] = useState(primaryImageUrl);
   const gridSize = 5; // 5x5 grid = 25 pieces
   
   // Load and process the image
   useEffect(() => {
+    console.log(`Attempting to load image: ${imageUrl}`);
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = imageUrl;
     
     img.onload = () => {
+      console.log('Image loaded successfully');
       if (canvasRef.current) {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
@@ -85,18 +124,20 @@ const PuzzleGame: React.FC = () => {
       }
     };
     
-    img.onerror = () => {
+    img.onerror = (e) => {
+      console.error('Image failed to load:', e);
       // If primary image fails, try fallback
       if (imageUrl === primaryImageUrl) {
         console.log('Primary image failed to load, trying fallback');
         setImageUrl(fallbackImageUrl);
       } else {
         // If fallback also fails
+        console.error('Both primary and fallback images failed to load');
         setImageError(true);
         setImageLoaded(false);
       }
     };
-  }, [imageUrl]);
+  }, [imageUrl, basePath]);
   
   // Check if the puzzle is complete
   useEffect(() => {
@@ -160,7 +201,12 @@ const PuzzleGame: React.FC = () => {
   };
   
   if (!imageLoaded) {
-    return <div className="loading">Loading puzzle...</div>;
+    return (
+      <div className="loading">
+        <p>Loading puzzle...</p>
+        <p>Trying to load image from: {imageUrl}</p>
+      </div>
+    );
   }
   
   if (imageError) {
@@ -175,6 +221,15 @@ const PuzzleGame: React.FC = () => {
   return (
     <div className="puzzle-game">
       <h1>Photo Puzzle Game</h1>
+      
+      {import.meta.env.DEV && (
+        <div className="debug-info">
+          <h3>Debug Information</h3>
+          <p>Environment: {import.meta.env.MODE}</p>
+          <p>Base Path: {basePath}</p>
+          <p>Image URL: {imageUrl}</p>
+        </div>
+      )}
       
       <div className="game-container">
         <div className="puzzle-container">

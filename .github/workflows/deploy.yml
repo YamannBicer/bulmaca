@@ -31,16 +31,27 @@ jobs:
           cd frontend
           npm run build
 
+      - name: Add sample image
+        run: |
+          # Create photos directory if it doesn't exist
+          mkdir -p photos
+          
+          # Create a basic sample image if one doesn't exist
+          if [ ! -f "photos/sample1.jpg" ]; then
+            echo "Creating a sample image..."
+            curl -o photos/sample1.jpg https://picsum.photos/800/600
+          fi
+
       - name: Prepare deployment
         run: |
           # Ensure .nojekyll file exists to prevent GitHub Pages from using Jekyll processing
           touch frontend/dist/.nojekyll
           
-          # Copy photos directory if it exists
-          if [ -d "photos" ]; then
-            mkdir -p frontend/dist/photos
-            cp -r photos/* frontend/dist/photos/ || true
-          fi
+          # Create photos directory in the dist folder
+          mkdir -p frontend/dist/photos
+          
+          # Copy sample image
+          cp -r photos/* frontend/dist/photos/ || true
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

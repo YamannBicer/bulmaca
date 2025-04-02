@@ -105,6 +105,10 @@ function App() {
       
       loadPuzzleFromId(id, pieceCount, showPreview);
       setIsSharedPuzzle(true);
+    } else {
+      // If no parameters provided, load the default sample image
+      loadImageFromPhotosDirectory('sample1');
+      setIsSharedPuzzle(false); // Not a shared puzzle so user can change settings
     }
   }, []);
 

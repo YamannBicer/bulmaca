@@ -16,7 +16,7 @@ const PuzzleGame: React.FC = () => {
   const [showPreview, setShowPreview] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageUrl = '/bulmaca/photos/sample1.jpg';
+  const imageUrl = '/bulmaca/vite.svg';
   const gridSize = 5; // 5x5 grid = 25 pieces
   
   // Load and process the image

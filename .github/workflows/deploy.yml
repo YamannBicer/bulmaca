@@ -39,19 +39,69 @@ jobs:
           # Create a basic sample image if one doesn't exist
           if [ ! -f "photos/sample1.jpg" ]; then
             echo "Creating a sample image..."
-            curl -o photos/sample1.jpg https://picsum.photos/800/600
+            curl -o photos/sample1.jpg https://source.unsplash.com/random/800x600
           fi
 
       - name: Prepare deployment
         run: |
-          # Ensure .nojekyll file exists to prevent GitHub Pages from using Jekyll processing
+          # Find the actual CSS and JS file names
+          CSS_FILE=$(find frontend/dist/assets -name "*.css" | head -n 1 | xargs basename)
+          JS_FILE=$(find frontend/dist/assets -name "*.js" | head -n 1 | xargs basename)
+          
+          echo "Found CSS file: $CSS_FILE"
+          echo "Found JS file: $JS_FILE"
+          
+          # Create root index.html that loads the app with correct asset paths
+          cat > frontend/dist/index.html << EOL
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Bulmaca Puzzle Game</title>
+              <link rel="stylesheet" href="./assets/$CSS_FILE">
+            </head>
+            <body>
+              <div id="root"></div>
+              <script type="module" src="./assets/$JS_FILE"></script>
+            </body>
+          </html>
+          EOL
+          
+          # Create .nojekyll file at the root of the deployment
           touch frontend/dist/.nojekyll
+          
+          # Create a basic 404.html that redirects to index.html
+          cat > frontend/dist/404.html << 'EOL'
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta http-equiv="refresh" content="0;url=./">
+              <title>Redirecting...</title>
+              <script>
+                window.location.href = "./";
+              </script>
+            </head>
+            <body>
+              <p>If you are not redirected automatically, <a href="./">click here</a>.</p>
+            </body>
+          </html>
+          EOL
           
           # Create photos directory in the dist folder
           mkdir -p frontend/dist/photos
           
-          # Copy sample image
+          # Copy sample image(s)
           cp -r photos/* frontend/dist/photos/ || true
+          
+          # List the contents of the dist directory to verify everything is there
+          echo "Contents of dist directory:"
+          ls -la frontend/dist/
+          echo "Contents of assets directory:"
+          ls -la frontend/dist/assets/
+          echo "Contents of photos directory:"
+          ls -la frontend/dist/photos/
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

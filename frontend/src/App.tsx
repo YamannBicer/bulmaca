@@ -650,7 +650,10 @@ function App() {
     
     try {
       // Construct the URL to the image in the photos directory
+      // For GitHub Pages with base path /bulmaca/
       const imageUrl = `${window.location.origin}${import.meta.env.BASE_URL}photos/${imageId}.jpg`;
+      
+      console.log(`Attempting to load image from: ${imageUrl}`);
       
       // Create an image element to load the image
       const img = new Image();
@@ -658,8 +661,14 @@ function App() {
       
       // Wait for the image to load
       await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error(`Failed to load image: ${imageUrl}`));
+        img.onload = () => {
+          console.log('Image loaded successfully');
+          resolve();
+        };
+        img.onerror = () => {
+          console.error(`Failed to load image: ${imageUrl}`);
+          reject(new Error(`Failed to load image: ${imageUrl}`));
+        };
       });
       
       // Get the URL parameters to determine piece count and preview setting
@@ -709,7 +718,7 @@ function App() {
       
     } catch (error) {
       console.error('Error loading image from photos directory:', error);
-      setError('Failed to load the image. The image ID might be invalid or the image does not exist.');
+      setError('Failed to load the image. The image ID might be invalid or the image does not exist. Try uploading your own image to play.');
       setIsSharedPuzzle(false);
     } finally {
       setLoading(false);

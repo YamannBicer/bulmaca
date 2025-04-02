@@ -36,28 +36,15 @@ jobs:
           # Create .nojekyll file
           touch frontend/dist/.nojekyll
           
-          # Make a deployment directory with app subdirectory
+          # Create deployment directory
           mkdir -p deploy
-          mkdir -p deploy/app
           
-          # Copy all built files to the app subdirectory
-          cp -r frontend/dist/* deploy/app/
+          # Copy all built files to the root (not in a subdirectory)
+          cp -r frontend/dist/* deploy/
           
-          # Create a redirect in the root
-          echo '<!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="UTF-8">
-              <meta http-equiv="refresh" content="0;url=app/index.html">
-              <title>Redirecting to Bulmaca</title>
-              <script>
-                window.location.href = "app/index.html";
-              </script>
-            </head>
-            <body>
-              <p>If you are not redirected automatically, follow this <a href="app/index.html">link to the app</a>.</p>
-            </body>
-          </html>' > deploy/index.html
+          # Copy the photos directory to the deployment
+          mkdir -p deploy/photos
+          cp -r photos/* deploy/photos/ || true # The || true ensures the command succeeds even if the directory is empty
           
           # Create .nojekyll in the deploy root
           touch deploy/.nojekyll

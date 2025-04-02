@@ -85,21 +85,29 @@ function App() {
     const pieces = searchParams.get('pieces');
     const preview = searchParams.get('preview');
     const imageData = searchParams.get('imageData');
+    const photoId = searchParams.get('photoId');
     
-    if (imageData) {
+    if (photoId) {
+      // If there's a photoId parameter, load the image from the photos directory
+      const pieceCount = pieces ? parseInt(pieces, 10) : 16;
+      const showPreview = preview === 'false' ? false : true;
+      
+      loadImageFromPhotosDirectory(photoId);
+      setIsSharedPuzzle(true);
+    } else if (imageData) {
       // If the URL contains image data, use it to create a puzzle
       const pieceCount = pieces ? parseInt(pieces, 10) : 9;
       const showPreview = preview === 'false' ? false : true;
       
       loadPuzzleFromImageData(imageData, pieceCount, showPreview);
-      setIsSharedPuzzle(true); // Mark as a shared puzzle
+      setIsSharedPuzzle(true);
     } else if (id) {
       // Otherwise try to load from localStorage by ID
       const pieceCount = pieces ? parseInt(pieces, 10) : undefined;
       const showPreview = preview === 'false' ? false : true;
       
       loadPuzzleFromId(id, pieceCount, showPreview);
-      setIsSharedPuzzle(true); // Mark as a shared puzzle
+      setIsSharedPuzzle(true);
     }
   }, []);
 
@@ -383,6 +391,21 @@ function App() {
     };
   };
 
+  // Generate a shareable link based on an image in the photos directory
+  const generatePhotoLink = (photoId: string, pieceCount: number, preview: boolean) => {
+    const url = new URL(window.location.href);
+    url.search = ''; // Clear existing query params
+    
+    url.searchParams.set('photoId', photoId);
+    url.searchParams.set('pieces', pieceCount.toString());
+    if (!preview) {
+      url.searchParams.set('preview', 'false');
+    }
+    
+    setShareLink(url.toString());
+    return url.toString();
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -618,6 +641,68 @@ function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [moveHistory])
+
+  // Add this function to load an image from the photos directory
+  const loadImageFromPhotosDirectory = async (imageId: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Construct the URL to the image in the photos directory
+      const imageUrl = `${window.location.origin}${import.meta.env.BASE_URL}photos/${imageId}.jpg`;
+      
+      // Create an image element to load the image
+      const img = new Image();
+      img.src = imageUrl;
+      
+      // Wait for the image to load
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error(`Failed to load image: ${imageUrl}`));
+      });
+      
+      // Process the image as a puzzle
+      const pieceCount = 16; // Default to 16 pieces (4x4)
+      const { pieces, rows, cols } = splitImage(img, pieceCount);
+      
+      // Generate a unique ID for this puzzle
+      const newPuzzleId = generateUUID();
+      
+      // Update state
+      setPieces(pieces);
+      setOriginalImage(img.src);
+      setGridCols(cols);
+      setActualPieceCount(pieces.length);
+      setPuzzleId(newPuzzleId);
+      setShowPreview(true);
+      setIsComplete(false);
+      setShowInstructions(true);
+      setSelectedPieceIndex(null);
+      setMoveHistory([]);
+      
+      // Set the piece count to match
+      setPieceCount(pieceCount);
+      
+      // Store the puzzle in localStorage for future reference
+      const puzzleData = {
+        puzzle_id: newPuzzleId,
+        pieces,
+        originalImage: img.src,
+        rows,
+        cols,
+        pieceCount: pieces.length,
+        showPreview: true
+      };
+      storePuzzle(puzzleData);
+      
+    } catch (error) {
+      console.error('Error loading image from photos directory:', error);
+      setError('Failed to load the image. The image ID might be invalid or the image does not exist.');
+      setIsSharedPuzzle(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container">

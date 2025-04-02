@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import '../styles/PuzzleGame.css';
 
 // Interface for the puzzle piece
@@ -16,10 +16,10 @@ const PuzzleGame: React.FC = () => {
   const [showPreview, setShowPreview] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [userImage, setUserImage] = useState<string | null>(null);
+  const [uploadedImageName, setUploadedImageName] = useState<string>('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  // Dynamically detect base path
-  const basePath = import.meta.env.BASE_URL || '';
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Simple colored grid for development
   const createColorGrid = () => {
@@ -54,16 +54,45 @@ const PuzzleGame: React.FC = () => {
     return '';
   };
   
-  // Create a default image in development
+  // Create a default image
   const defaultImage = createColorGrid();
-  const primaryImageUrl = import.meta.env.DEV ? defaultImage : `${basePath}/vite.svg`;
-  const fallbackImageUrl = `${basePath}/vite.svg`;
-  const [imageUrl, setImageUrl] = useState(primaryImageUrl);
+  const [imageUrl, setImageUrl] = useState<string>(defaultImage);
   const gridSize = 5; // 5x5 grid = 25 pieces
+  
+  // Handle file upload
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Reset states
+    setImageLoaded(false);
+    setImageError(false);
+    setUploadedImageName(file.name);
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const uploadedImageUrl = e.target?.result as string;
+      setUserImage(uploadedImageUrl);
+      setImageUrl(uploadedImageUrl);
+    };
+    
+    reader.onerror = () => {
+      setImageError(true);
+    };
+    
+    reader.readAsDataURL(file);
+  };
+  
+  // Trigger file input click
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
   
   // Load and process the image
   useEffect(() => {
-    console.log(`Attempting to load image: ${imageUrl}`);
+    if (!imageUrl) return;
+    
+    console.log(`Attempting to load image: ${imageUrl.substring(0, 30)}...`);
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = imageUrl;
@@ -126,18 +155,10 @@ const PuzzleGame: React.FC = () => {
     
     img.onerror = (e) => {
       console.error('Image failed to load:', e);
-      // If primary image fails, try fallback
-      if (imageUrl === primaryImageUrl) {
-        console.log('Primary image failed to load, trying fallback');
-        setImageUrl(fallbackImageUrl);
-      } else {
-        // If fallback also fails
-        console.error('Both primary and fallback images failed to load');
-        setImageError(true);
-        setImageLoaded(false);
-      }
+      setImageError(true);
+      setImageLoaded(false);
     };
-  }, [imageUrl, basePath]);
+  }, [imageUrl]);
   
   // Check if the puzzle is complete
   useEffect(() => {
@@ -204,7 +225,25 @@ const PuzzleGame: React.FC = () => {
     return (
       <div className="loading">
         <p>Loading puzzle...</p>
-        <p>Trying to load image from: {imageUrl}</p>
+        {imageUrl !== defaultImage && <p>Processing your image...</p>}
+        
+        {/* Show upload option if no user image yet */}
+        {!userImage && (
+          <div className="upload-container">
+            <h2>Upload an Image</h2>
+            <p>Start by uploading a photo to create a puzzle</p>
+            <button className="upload-button" onClick={triggerFileUpload}>
+              Choose Photo
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept="image/*"
+              style={{ display: 'none' }}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -226,10 +265,24 @@ const PuzzleGame: React.FC = () => {
         <div className="debug-info">
           <h3>Debug Information</h3>
           <p>Environment: {import.meta.env.MODE}</p>
-          <p>Base Path: {basePath}</p>
-          <p>Image URL: {imageUrl}</p>
+          <p>Image Source: {userImage ? 'User uploaded' : 'Default'}</p>
+          {uploadedImageName && <p>File: {uploadedImageName}</p>}
         </div>
       )}
+      
+      <div className="upload-controls">
+        <button className="upload-button" onClick={triggerFileUpload}>
+          {userImage ? 'Change Photo' : 'Upload Photo'}
+        </button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept="image/*"
+          style={{ display: 'none' }}
+        />
+        {uploadedImageName && <span className="file-name">{uploadedImageName}</span>}
+      </div>
       
       <div className="game-container">
         <div className="puzzle-container">

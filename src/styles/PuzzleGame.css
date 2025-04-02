@@ -157,4 +157,58 @@
 
 .debug-info p {
   margin: 2px 0;
+}
+
+/* Upload styles */
+.upload-container {
+  text-align: center;
+  margin: 40px auto;
+  max-width: 500px;
+  padding: 30px;
+  background-color: #f5f5f5;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.upload-container h2 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.upload-container p {
+  margin-bottom: 25px;
+  color: #666;
+}
+
+.upload-controls {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.upload-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.upload-button:hover {
+  background-color: #45a049;
+}
+
+.file-name {
+  font-style: italic;
+  color: #666;
+  margin-left: 10px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 } 
